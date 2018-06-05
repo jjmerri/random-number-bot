@@ -10,7 +10,6 @@ import configparser
 import logging
 import os
 import smtplib
-import json
 from rdoclient_py3 import RandomOrgClient
 
 from email.mime.text import MIMEText
@@ -19,7 +18,7 @@ from email.mime.text import MIMEText
 # GLOBALS
 # =============================================================================
 
-VERSION = '1.0'
+VERSION = '1.1'
 
 # Reads the config file
 config = configparser.ConfigParser()
@@ -48,7 +47,7 @@ ENVIRONMENT = config.get("RandomNumberBot", "environment")
 DEV_USER_NAME = config.get("RandomNumberBot", "dev_user")
 RANDOM_ORG_API_KEY = config.get("RandomNumberBot", "random_org_api_key")
 
-random_org_client = RandomOrgClient(RANDOM_ORG_API_KEY, blocking_timeout=2.0, http_timeout=10.0)
+random_org_client = RandomOrgClient(RANDOM_ORG_API_KEY, blocking_timeout=30.0, http_timeout=30.0)
 
 FORMAT = '%(asctime)-15s %(message)s'
 logging.basicConfig(format=FORMAT)
@@ -128,7 +127,7 @@ def process_mention(mention):
     if(response and response['data']):
         mention.reply(random_number_reply.format(command_message = command_message,
                                    random_numbers = str(response['data']),
-                                   verification_random = json.dumps(response['random']),
+                                   verification_random = get_verification_random(response['random']),
                                    verification_signature = str(response['signature']),
                                    version = VERSION))
     else:
@@ -140,6 +139,28 @@ def process_mention(mention):
             send_dev_pm("Error getting random nums", 'Error getting random nums {num_randoms} {num_slots}'.format(num_randoms=num_randoms, num_slots=num_slots))
         except Exception as err:
             logger.exception("Unknown error sending dev pm or email")
+
+def get_verification_random(random_dict):
+    return '{{"method": "generateSignedIntegers",'\
+    '"hashedApiKey": "{hashedApiKey}",'\
+    '"n": {n},'\
+    '"min": {min},'\
+    '"max": {max},'\
+    '"replacement": {replacement},'\
+    '"base": {base},'\
+    '"data": {data},'\
+    '"completionTime": "{completionTime}",'\
+    '"serialNumber": {serialNumber}}}'.format(
+        hashedApiKey = random_dict['hashedApiKey'],
+        n = random_dict['n'],
+        min = random_dict['min'],
+        max = random_dict['max'],
+        replacement = str(random_dict['replacement']).lower(),
+        base = random_dict['base'],
+        data = random_dict['data'],
+        completionTime = random_dict['completionTime'],
+        serialNumber = random_dict['serialNumber']
+    )
 
 # =============================================================================
 # MAIN
