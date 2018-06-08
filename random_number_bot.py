@@ -18,7 +18,7 @@ from email.mime.text import MIMEText
 # GLOBALS
 # =============================================================================
 
-VERSION = '1.1.1'
+VERSION = '1.1.2'
 
 # Reads the config file
 config = configparser.ConfigParser()
@@ -101,7 +101,7 @@ def check_mentions():
         process_mention(mention)
 
 def process_mention(mention):
-    command_regex = r'^/?u/{bot_username}[ ]+(?P<param_1>[\d]+)([ ]+(?P<param_2>[\d]+))?([ ]+)?$'.format(bot_username=bot_username)
+    command_regex = r'^([ ]+)?/?u/{bot_username}[ ]+(?P<param_1>[\d]+)([ ]+(?P<param_2>[\d]+))?([ ]+)?$'.format(bot_username=bot_username)
     match = re.search(command_regex, mention.body, re.IGNORECASE)
 
     command_message = ''
