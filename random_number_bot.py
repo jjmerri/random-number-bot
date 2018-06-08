@@ -18,7 +18,7 @@ from email.mime.text import MIMEText
 # GLOBALS
 # =============================================================================
 
-VERSION = '1.1'
+VERSION = '1.1.1'
 
 # Reads the config file
 config = configparser.ConfigParser()
@@ -78,7 +78,7 @@ def send_dev_pm(subject, body):
     reddit.redditor(DEV_USER_NAME).message(subject, body)
 
 def send_dev_email(subject, body, email_addresses):
-    sent_from = 'jjmerri88@gmail.com'
+    sent_from = DEV_EMAIL
 
     msg = MIMEText(body.encode('utf-8'), 'plain', 'UTF-8')
     msg['Subject'] = subject
