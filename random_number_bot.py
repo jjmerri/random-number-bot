@@ -10,7 +10,9 @@ import configparser
 import logging
 import os
 import smtplib
-from rdoclient_py3 import RandomOrgClient
+import json
+import requests
+import uuid
 
 from email.mime.text import MIMEText
 
@@ -18,7 +20,7 @@ from email.mime.text import MIMEText
 # GLOBALS
 # =============================================================================
 
-VERSION = '1.1.2'
+VERSION = '1.1.3'
 
 # Reads the config file
 config = configparser.ConfigParser()
@@ -46,8 +48,8 @@ RUNNING_FILE = "random_number_bot.running"
 ENVIRONMENT = config.get("RandomNumberBot", "environment")
 DEV_USER_NAME = config.get("RandomNumberBot", "dev_user")
 RANDOM_ORG_API_KEY = config.get("RandomNumberBot", "random_org_api_key")
-
-random_org_client = RandomOrgClient(RANDOM_ORG_API_KEY, blocking_timeout=30.0, http_timeout=30.0)
+RANDOM_ORG_API_URL = 'https://api.random.org/json-rpc/1/invoke'
+HTTP_TIMEOUT = 30.0
 
 FORMAT = '%(asctime)-15s %(message)s'
 logging.basicConfig(format=FORMAT)
@@ -96,11 +98,14 @@ def create_running_file():
 
 def check_mentions():
     for mention in reddit.inbox.unread(limit=None):
-        #Mark Read first in case there is an error we dont want to keep trying to process it
+        # Mark Read first in case there is an error we dont want to keep trying to process it
         mention.mark_read()
         process_mention(mention)
 
 def process_mention(mention):
+    logger.info(
+        'Processing comment by {author} for {context}'.format(author=str(mention.author), context=mention.context))
+
     command_regex = r'^([ ]+)?/?u/{bot_username}[ ]+(?P<param_1>[\d]+)([ ]+(?P<param_2>[\d]+))?([ ]+)?$'.format(bot_username=bot_username)
     match = re.search(command_regex, mention.body, re.IGNORECASE)
 
@@ -122,23 +127,47 @@ def process_mention(mention):
         #could be a normal mention not a command so just return
         return
 
-    response = random_org_client.generate_signed_integers(num_randoms, 1, num_slots, replacement=False)
+    request = getRdoRequest(num_randoms, num_slots)
 
-    if(response and response['data']):
+    responseData = {}
+    try:
+        response = requests.post(RANDOM_ORG_API_URL,
+                      data=json.dumps(request),
+                      headers={'content-type': 'application/json'},
+                      timeout=HTTP_TIMEOUT)
+        responseData = response.json()
+
+        logger.info('API response for comment by {author} for {context} is {response}'
+                    .format(author=str(mention.author), context=mention.context, response=str(responseData)))
+    except Exception as err:
+        logger.exception('Error calling RandomOrg API')
+
+    if(responseData and 'result' in responseData):
+        responseResult = responseData['result']
         mention.reply(random_number_reply.format(command_message = command_message,
-                                   random_numbers = str(response['data']),
-                                   verification_random = get_verification_random(response['random']),
-                                   verification_signature = str(response['signature']),
+                                   random_numbers = str(responseResult['random']['data']),
+                                   verification_random = get_verification_random(responseResult['random']),
+                                   verification_signature = str(responseResult['signature']),
                                    version = VERSION))
     else:
         logger.error('Error getting random nums {num_randoms} {num_slots}'.format(num_randoms=num_randoms, num_slots=num_slots))
-        logger.error(str(response))
+        logger.error(str(responseData))
         try:
-            send_dev_email("Error getting random nums", 'Error getting random nums {num_randoms} {num_slots}'.format(num_randoms=num_randoms, num_slots=num_slots))
-            mention.reply('There was an error getting your random numbers from random.org. Please try again.')
-            send_dev_pm("Error getting random nums", 'Error getting random nums {num_randoms} {num_slots}'.format(num_randoms=num_randoms, num_slots=num_slots))
+            if num_slots == 1:
+                mention.reply('The number of slots must be greater than 1. Please fix the call and try again.')
+            else:
+                mention.reply('There was an error getting your random numbers from random.org. Please try again. '
+                              'If you continue to experience issues or the bot becomes unresponsive please contact {DEV_USER_NAME}.'
+                              .format(DEV_USER_NAME=DEV_USER_NAME))
+                send_dev_email("Error getting random nums", 'Error getting random nums {num_randoms} {num_slots}'.format(num_randoms=num_randoms, num_slots=num_slots), [DEV_EMAIL])
+                send_dev_pm("Error getting random nums", 'Error getting random nums {num_randoms} {num_slots}'.format(num_randoms=num_randoms, num_slots=num_slots))
         except Exception as err:
             logger.exception("Unknown error sending dev pm or email")
+
+def getRdoRequest(num_randoms, num_slots):
+    return {'jsonrpc': '2.0', 'method': 'generateSignedIntegers',
+     'params': {'apiKey': RANDOM_ORG_API_KEY, 'n': num_randoms, 'min': 1, 'max': num_slots, 'replacement': False},
+     'id': uuid.uuid4().hex}
 
 def get_verification_random(random_dict):
     return '{{"method": "generateSignedIntegers",'\
