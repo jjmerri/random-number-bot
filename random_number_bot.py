@@ -20,7 +20,7 @@ from email.mime.text import MIMEText
 # GLOBALS
 # =============================================================================
 
-VERSION = '1.1.3'
+VERSION = '1.1.4'
 
 # Reads the config file
 config = configparser.ConfigParser()
@@ -68,8 +68,11 @@ Paste the following values into their respective fields on the [random.org verif
 
 {verification_signature}
 
-**This bot is maintained and hosted by BoyAndHisBlob. View the {version} source code on [github](https://github.com/jjmerri/random-number-bot)**"""
+---
 
+[^(Give Feedback)](https://www.reddit.com/message/compose/?to=BoyAndHisBlob&subject=Feedback) ^| [^(Version {version} Source Code)](https://github.com/jjmerri/random-number-bot) ^| [^(Tip BoyAndHisBlob)](https://blobware-tips.firebaseapp.com)
+
+^(This bot is maintained and hosted by BoyAndHisBlob.)"""
 
 def send_dev_pm(subject, body):
     """
