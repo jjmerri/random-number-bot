@@ -20,7 +20,7 @@ from email.mime.text import MIMEText
 # GLOBALS
 # =============================================================================
 
-VERSION = '1.1.4'
+VERSION = '1.1.5'
 
 # Reads the config file
 config = configparser.ConfigParser()
@@ -48,7 +48,7 @@ RUNNING_FILE = "random_number_bot.running"
 ENVIRONMENT = config.get("RandomNumberBot", "environment")
 DEV_USER_NAME = config.get("RandomNumberBot", "dev_user")
 RANDOM_ORG_API_KEY = config.get("RandomNumberBot", "random_org_api_key")
-RANDOM_ORG_API_URL = 'https://api.random.org/json-rpc/1/invoke'
+RANDOM_ORG_API_URL = 'https://api.random.org/json-rpc/2/invoke'
 HTTP_TIMEOUT = 30.0
 
 FORMAT = '%(asctime)-15s %(message)s'
@@ -149,7 +149,7 @@ def process_mention(mention):
         responseResult = responseData['result']
         mention.reply(random_number_reply.format(command_message = command_message,
                                    random_numbers = str(responseResult['random']['data']),
-                                   verification_random = get_verification_random(responseResult['random']),
+                                   verification_random = json.dumps(responseResult['random']),
                                    verification_signature = str(responseResult['signature']),
                                    version = VERSION))
     else:
