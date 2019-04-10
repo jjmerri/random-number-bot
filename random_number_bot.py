@@ -149,7 +149,7 @@ def process_mention(mention):
         responseResult = responseData['result']
         mention.reply(random_number_reply.format(command_message = command_message,
                                    random_numbers = str(responseResult['random']['data']),
-                                   verification_random = json.dumps(responseResult['random']),
+                                   verification_random = get_verification_random(responseResult['random']),
                                    verification_signature = str(responseResult['signature']),
                                    version = VERSION))
     else:
@@ -173,6 +173,10 @@ def getRdoRequest(num_randoms, num_slots):
      'id': uuid.uuid4().hex}
 
 def get_verification_random(random_dict):
+    infoUrl = "null"
+    if ('infoUrl' in random_dict):
+        infoUrl = '"' + random_dict['infoUrl'] + '"'
+
     return '{{"method": "generateSignedIntegers",'\
     '"hashedApiKey": "{hashedApiKey}",'\
     '"n": {n},'\
@@ -182,6 +186,8 @@ def get_verification_random(random_dict):
     '"base": {base},'\
     '"data": {data},'\
     '"completionTime": "{completionTime}",'\
+    '"userData":null,'\
+    '"license": {{"type":"{licenseType}", "text":"{licenseText}","infoUrl":{infoUrl}}},'\
     '"serialNumber": {serialNumber}}}'.format(
         hashedApiKey = random_dict['hashedApiKey'],
         n = random_dict['n'],
@@ -191,7 +197,10 @@ def get_verification_random(random_dict):
         base = random_dict['base'],
         data = random_dict['data'],
         completionTime = random_dict['completionTime'],
-        serialNumber = random_dict['serialNumber']
+        serialNumber = random_dict['serialNumber'],
+        licenseType = random_dict['license']['type'],
+        licenseText = random_dict['license']['text'],
+        infoUrl = infoUrl
     )
 
 # =============================================================================
