@@ -13,6 +13,8 @@ import smtplib
 import json
 import requests
 import uuid
+import base64
+import urllib
 
 from email.mime.text import MIMEText
 
@@ -20,7 +22,7 @@ from email.mime.text import MIMEText
 # GLOBALS
 # =============================================================================
 
-VERSION = '1.1.5'
+VERSION = '1.1.6'
 
 # Reads the config file
 config = configparser.ConfigParser()
@@ -56,9 +58,10 @@ logging.basicConfig(format=FORMAT)
 logger = logging.getLogger('RandomNumberBot')
 logger.setLevel(logging.INFO)
 
+random_verification_url = 'https://api.random.org/signatures/form?format=json&random={random}&signature={signature}'
 random_number_reply = """#{command_message} {random_numbers}
         
-Paste the following values into their respective fields on the [random.org verify page](https://api.random.org/verify) to verify the winner.
+To verify the winner, click [this link]({random_verification_url_string}) with prepopulated values or paste the following values into their respective fields on the [random.org verify page](https://api.random.org/verify).
 
 **Random:**
 
@@ -147,10 +150,15 @@ def process_mention(mention):
 
     if(responseData and 'result' in responseData):
         responseResult = responseData['result']
+        random_verification_url_string = random_verification_url.format(
+            random = urllib.parse.quote_plus(base64.standard_b64encode(json.dumps(responseResult['random']).encode('utf-8')).decode("utf-8")),
+            signature = urllib.parse.quote_plus(str(responseResult['signature']))
+        )
         mention.reply(random_number_reply.format(command_message = command_message,
                                    random_numbers = str(responseResult['random']['data']),
-                                   verification_random = get_verification_random(responseResult['random']),
+                                   verification_random = json.dumps((responseResult['random'])),
                                    verification_signature = str(responseResult['signature']),
+                                   random_verification_url_string = random_verification_url_string,
                                    version = VERSION))
     else:
         logger.error('Error getting random nums {num_randoms} {num_slots}'.format(num_randoms=num_randoms, num_slots=num_slots))
@@ -171,37 +179,6 @@ def getRdoRequest(num_randoms, num_slots):
     return {'jsonrpc': '2.0', 'method': 'generateSignedIntegers',
      'params': {'apiKey': RANDOM_ORG_API_KEY, 'n': num_randoms, 'min': 1, 'max': num_slots, 'replacement': False},
      'id': uuid.uuid4().hex}
-
-def get_verification_random(random_dict):
-    infoUrl = "null"
-    if ('infoUrl' in random_dict):
-        infoUrl = '"' + random_dict['infoUrl'] + '"'
-
-    return '{{"method": "generateSignedIntegers",'\
-    '"hashedApiKey": "{hashedApiKey}",'\
-    '"n": {n},'\
-    '"min": {min},'\
-    '"max": {max},'\
-    '"replacement": {replacement},'\
-    '"base": {base},'\
-    '"data": {data},'\
-    '"completionTime": "{completionTime}",'\
-    '"userData":null,'\
-    '"license": {{"type":"{licenseType}", "text":"{licenseText}","infoUrl":{infoUrl}}},'\
-    '"serialNumber": {serialNumber}}}'.format(
-        hashedApiKey = random_dict['hashedApiKey'],
-        n = random_dict['n'],
-        min = random_dict['min'],
-        max = random_dict['max'],
-        replacement = str(random_dict['replacement']).lower(),
-        base = random_dict['base'],
-        data = random_dict['data'],
-        completionTime = random_dict['completionTime'],
-        serialNumber = random_dict['serialNumber'],
-        licenseType = random_dict['license']['type'],
-        licenseText = random_dict['license']['text'],
-        infoUrl = infoUrl
-    )
 
 # =============================================================================
 # MAIN
