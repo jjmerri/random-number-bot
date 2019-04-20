@@ -22,7 +22,7 @@ from email.mime.text import MIMEText
 # GLOBALS
 # =============================================================================
 
-VERSION = '1.1.6'
+VERSION = '1.1.7'
 
 # Reads the config file
 config = configparser.ConfigParser()
@@ -61,7 +61,7 @@ logger.setLevel(logging.INFO)
 random_verification_url = 'https://api.random.org/signatures/form?format=json&random={random}&signature={signature}'
 random_number_reply = """#{command_message} {random_numbers}
         
-To verify the winner, click [this link]({random_verification_url_string}) with prepopulated values or paste the following values into their respective fields on the [random.org verify page](https://api.random.org/verify).
+To verify the winner, click [this link]({random_verification_url_string}) with prepopulated values or paste the following values into their respective fields on the [random.org verify page](https://api.random.org/verify). More info about extensive verification and the bot can be found in [this post.](https://www.reddit.com/r/WatchURaffle/comments/8sbd92/information_about_the_bot_uboyandhisbot)
 
 **Random:**
 
