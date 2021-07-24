@@ -33,13 +33,6 @@ bot_password = config.get("Reddit", "password")
 client_id = config.get("Reddit", "client_id")
 client_secret = config.get("Reddit", "client_secret")
 
-#Reddit info
-reddit = praw.Reddit(client_id=client_id,
-                     client_secret=client_secret,
-                     password=bot_password,
-                     user_agent='random_number_bot by /u/BoyAndHisBlob',
-                     username=bot_username)
-
 EMAIL_SERVER = config.get("Email", "server")
 EMAIL_USERNAME = config.get("Email", "username")
 EMAIL_PASSWORD = config.get("Email", "password")
@@ -58,6 +51,14 @@ logging.basicConfig(format=FORMAT)
 logger = logging.getLogger('RandomNumberBot')
 logger.setLevel(logging.INFO)
 
+#Reddit info
+reddit = praw.Reddit(client_id=client_id,
+                     client_secret=client_secret,
+                     password=bot_password,
+                     user_agent='random_number_bot by {DEV_USER_NAME}'
+                              .format(DEV_USER_NAME=DEV_USER_NAME),
+                     username=bot_username)
+
 random_verification_url = 'https://api.random.org/signatures/form?format=json&random={random}&signature={signature}'
 random_number_reply = """#{command_message} {random_numbers}
         
@@ -73,9 +74,9 @@ To verify the winner, click [this link]({random_verification_url_string}) with p
 
 ---
 
-[^(Give Feedback)](https://www.reddit.com/message/compose/?to=BoyAndHisBlob&subject=Feedback) ^| [^(Version {version} Source Code)](https://github.com/jjmerri/random-number-bot) ^| [^(Tip BoyAndHisBlob)](https://blobware-tips.firebaseapp.com)
+[^(Give Feedback)](https://www.reddit.com/message/compose/?to=BlobAndHisBoy&subject=Feedback) ^| [^(Version {version} Source Code)](https://github.com/jjmerri/random-number-bot) ^| [^(Tip BlobAndHisBoy)](https://blobware-tips.firebaseapp.com)
 
-^(This bot is maintained and hosted by BoyAndHisBlob.)"""
+^(This bot is maintained and hosted by BlobAndHisBoy.)"""
 
 def send_dev_pm(subject, body):
     """
